@@ -21,6 +21,9 @@
 
 namespace Ime {
 
+	static HKL s_englishKeyboardLayout = NULL;
+
+
 KeyEvent::KeyEvent(UINT type, WPARAM wp, LPARAM lp):
 	type_(type),
 	keyCode_(wp),
@@ -36,10 +39,21 @@ KeyEvent::KeyEvent(UINT type, WPARAM wp, LPARAM lp):
 	WORD result[2] = {0, 0};
 	BYTE ctrlState = keyStates_[VK_CONTROL];
 	keyStates_[VK_CONTROL] = 0;
-	if(::ToAscii(keyCode_, scanCode(), keyStates_, result, 0) == 1)
+	
+	if (s_englishKeyboardLayout == NULL) {
+		s_englishKeyboardLayout = LoadKeyboardLayout(L"00000409", KLF_NOTELLSHELL);
+	}
+
+	if (s_englishKeyboardLayout && ::ToAsciiEx(keyCode_, scanCode(), keyStates_, result, 0, s_englishKeyboardLayout) == 1) {
 		charCode_ = (UINT)result[0];
-	else
-		charCode_ = 0;
+	}
+	else {
+		if (::ToAscii(keyCode_, scanCode(), keyStates_, result, 0) == 1)
+			charCode_ = (UINT)result[0];
+		else
+			charCode_ = 0;
+	}
+
 	keyStates_[VK_CONTROL] = ctrlState;
 }
 
